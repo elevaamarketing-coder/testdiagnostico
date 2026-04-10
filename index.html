@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Test de Diagnóstico Instagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b1a3d;
+    --surface: #102254;
+    --surface2: #162d6a;
+    --accent: #12a884;
+    --accent2: #3075fa;
+    --accent3: #12a884;
+    --text: #ffffff;
+    --text-muted: #8aaad4;
+    --radius: 16px;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background mesh */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 10%, rgba(48,117,250,.15) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 35% at 80% 80%, rgba(18,168,132,.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 60% 30%, rgba(48,117,250,.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+  /* ── INTRO ── */
+  .intro { text-align: center; padding: 3rem 0 2rem; animation: fadeUp .6s ease both; }
+  .intro .tag {
+    display: inline-block; font-family: var(--font-head); font-size: 11px; font-weight: 700;
+    letter-spacing: .15em; text-transform: uppercase; color: var(--accent);
+    border: 1px solid rgba(200,240,96,.3); border-radius: 100px;
+    padding: 5px 16px; margin-bottom: 1.5rem;
+  }
+  .intro h1 { font-family: var(--font-head); font-size: clamp(2rem, 8vw, 3.2rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.2rem; }
+  .intro h1 span { color: var(--accent); }
+  .intro p { font-size: 1rem; color: var(--text-muted); line-height: 1.7; max-width: 440px; margin: 0 auto 2.5rem; }
+  .intro .meta { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2.5rem; }
+  .intro .meta-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .intro .meta-item .num { font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .intro .meta-item .lbl { font-size: 12px; color: var(--text-muted); }
+
+  /* ── PROGRESS ── */
+  .progress-wrap { margin-bottom: 2rem; animation: fadeUp .5s ease .1s both; }
+  .progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+  .progress-label { font-size: 13px; color: var(--text-muted); }
+  .progress-count { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--accent); }
+  .progress-bar { height: 4px; background: var(--surface2); border-radius: 100px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #12a884, #3075fa); border-radius: 100px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+
+  /* ── QUESTION CARD ── */
+  .q-card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: var(--radius);
+    padding: 2rem 1.75rem;
+    animation: fadeUp .4s ease both;
+  }
+  .q-num { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .75rem; }
+  .q-text { font-family: var(--font-head); font-size: 1.15rem; font-weight: 700; line-height: 1.4; margin-bottom: 1.5rem; }
+  .q-options { display: flex; flex-direction: column; gap: .65rem; }
+
+  .option {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--surface2); border: 1.5px solid rgba(255,255,255,.07);
+    border-radius: 12px; padding: .9rem 1.1rem; cursor: pointer;
+    transition: all .2s ease; position: relative; overflow: hidden;
+    font-size: .95rem; line-height: 1.4; color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .option:hover { border-color: rgba(200,240,96,.3); background: rgba(200,240,96,.05); }
+  .option.selected { border-color: var(--accent); background: rgba(200,240,96,.08); color: var(--text); }
+  .option.selected .o-bullet { background: var(--accent); border-color: var(--accent); }
+  .option.selected .o-bullet::after { opacity: 1; }
+  .o-bullet {
+    width: 20px; height: 20px; min-width: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.2); transition: all .2s; position: relative;
+  }
+  .o-bullet::after {
+    content: ''; position: absolute; inset: 3px; border-radius: 50%;
+    background: var(--bg); opacity: 0; transition: opacity .2s;
+  }
+  .o-score { display: none; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--font-head); font-size: 1rem; font-weight: 700;
+    border: none; border-radius: 100px; cursor: pointer; transition: all .2s;
+    padding: .9rem 2rem; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary { background: var(--accent); color: #0a0a0f; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(18,168,132,.3); }
+  .btn-primary:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-ghost { background: transparent; border: 1.5px solid rgba(255,255,255,.15); color: var(--text); }
+  .btn-ghost:hover { border-color: rgba(255,255,255,.35); }
+
+  .nav-btns { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; gap: 1rem; }
+  .nav-btns .btn-primary { flex: 1; }
+
+  /* ── START BUTTON ── */
+  .btn-start {
+    display: inline-flex; align-items: center; gap: .6rem;
+    background: var(--accent); color: #0a0a0f; border: none;
+    font-family: var(--font-head); font-weight: 800; font-size: 1.05rem;
+    padding: 1rem 2.2rem; border-radius: 100px; cursor: pointer;
+    transition: all .25s; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-start:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(18,168,132,.4); }
+  .btn-start svg { width: 18px; height: 18px; }
+
+  /* ── RESULT ── */
+  .result { animation: fadeUp .5s ease both; }
+  .result-header { text-align: center; padding: 2.5rem 1.5rem 2rem; }
+  .result-badge {
+    display: inline-block; font-family: var(--font-head); font-size: 11px; font-weight: 700;
+    letter-spacing: .15em; text-transform: uppercase; border-radius: 100px;
+    padding: 5px 18px; margin-bottom: 1.25rem;
+  }
+  .result-title { font-family: var(--font-head); font-size: clamp(1.6rem, 7vw, 2.4rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; }
+  .result-sub { font-size: .95rem; color: var(--text-muted); line-height: 1.7; max-width: 420px; margin: 0 auto 2rem; }
+
+  .score-ring-wrap { display: flex; justify-content: center; margin: 1.5rem 0 2rem; }
+  .score-ring { position: relative; width: 120px; height: 120px; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .score-num {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; line-height: 1;
+  }
+  .score-ring .score-lbl { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+  .result-cards { display: grid; gap: .75rem; margin-bottom: 2rem; }
+  .r-card {
+    background: var(--surface); border: 1px solid rgba(255,255,255,.06);
+    border-radius: var(--radius); padding: 1.25rem 1.5rem;
+    display: flex; gap: 1rem; align-items: flex-start;
+  }
+  .r-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+  .r-card-title { font-family: var(--font-head); font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
+  .r-card-text { font-size: .875rem; color: var(--text-muted); line-height: 1.6; }
+
+  .cta-section { display: flex; flex-direction: column; gap: .75rem; margin-top: 2rem; }
+  .btn-wa {
+    display: flex; align-items: center; justify-content: center; gap: .7rem;
+    background: #25D366; color: #fff; border: none; border-radius: 100px;
+    font-family: var(--font-head); font-weight: 700; font-size: 1rem;
+    padding: 1rem 2rem; cursor: pointer; transition: all .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,.35); }
+  .btn-pdf {
+    display: flex; align-items: center; justify-content: center; gap: .7rem;
+    background: var(--surface2); border: 1.5px solid rgba(255,255,255,.12); color: var(--text);
+    border-radius: 100px; font-family: var(--font-head); font-weight: 700; font-size: 1rem;
+    padding: 1rem 2rem; cursor: pointer; transition: all .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-pdf:hover { border-color: rgba(200,240,96,.4); color: var(--accent); }
+  .btn-retry { background: none; border: none; color: var(--text-muted); font-size: .875rem; cursor: pointer; text-align: center; padding: .5rem; text-decoration: underline; }
+
+  /* ── NIVEL COLORS ── */
+  .nivel-1 .result-badge { background: rgba(240,96,96,.15); color: #f06060; border: 1px solid rgba(240,96,96,.3); }
+  .nivel-1 .result-title span, .nivel-1 .score-num { color: #f06060; }
+  .nivel-1 .ring-fill { stroke: #f06060; }
+
+  .nivel-2 .result-badge { background: rgba(240,180,60,.12); color: #f0b43c; border: 1px solid rgba(240,180,60,.3); }
+  .nivel-2 .result-title span, .nivel-2 .score-num { color: #f0b43c; }
+  .nivel-2 .ring-fill { stroke: #f0b43c; }
+
+  .nivel-3 .result-badge { background: rgba(18,168,132,.12); color: #12a884; border: 1px solid rgba(18,168,132,.3); }
+  .nivel-3 .result-title span, .nivel-3 .score-num { color: #12a884; }
+  .nivel-3 .ring-fill { stroke: #12a884; }
+
+  /* ── LEAD FORM ── */
+  .lead-form { background: var(--surface); border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius); padding: 1.75rem; margin-bottom: 1.5rem; }
+  .lead-form h3 { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; margin-bottom: .4rem; }
+  .lead-form p { font-size: .875rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6; }
+  .form-row { display: flex; flex-direction: column; gap: .65rem; }
+  .form-input {
+    background: var(--surface2); border: 1.5px solid rgba(255,255,255,.1);
+    border-radius: 12px; padding: .85rem 1.1rem; color: var(--text);
+    font-family: var(--font-body); font-size: .95rem; outline: none; width: 100%;
+    transition: border-color .2s;
+  }
+  .form-input:focus { border-color: rgba(200,240,96,.5); }
+  .form-input::placeholder { color: var(--text-muted); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes scaleIn { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="intro">
+    <div class="tag">Test gratuito · 3 minutos</div>
+    <h1>¿Tu Instagram está listo para <span>vender</span>?</h1>
+    <p>Respondé 10 preguntas y descubrí en qué estado está tu perfil — y cuál es el próximo paso para crecer.</p>
+    <div class="meta">
+      <div class="meta-item"><span class="num">10</span><span class="lbl">Preguntas</span></div>
+      <div class="meta-item"><span class="num">3</span><span class="lbl">Minutos</span></div>
+      <div class="meta-item"><span class="num">1</span><span class="lbl">Diagnóstico</span></div>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">
+      Empezar el test
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="screen-quiz" class="hidden">
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="progress-label">Pregunta <span id="q-current">1</span> de 10</span>
+        <span class="progress-count" id="q-percent">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="q-card" id="q-card">
+      <div class="q-num" id="q-num">Pregunta 01</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="q-options" id="q-options"></div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-ghost" id="btn-back" onclick="prevQ()" style="flex-shrink:0">← Atrás</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextQ()" disabled>Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- LEAD CAPTURE -->
+  <div id="screen-lead" class="hidden" style="animation: fadeUp .5s ease both;">
+    <div style="text-align:center;padding:2.5rem 0 1.5rem;">
+      <div class="tag">¡Ya casi!</div>
+      <h2 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;margin:.75rem 0 .75rem;">Dejá tus datos para ver tu resultado</h2>
+      <p style="color:var(--text-muted);font-size:.9rem;line-height:1.7;max-width:360px;margin:0 auto 2rem;">Te enviamos el diagnóstico completo con recomendaciones personalizadas.</p>
+    </div>
+    <div class="lead-form">
+      <h3>¿A quién le mandamos el diagnóstico?</h3>
+      <p>Solo usamos tus datos para enviarte los resultados. Sin spam.</p>
+      <div class="form-row">
+        <input class="form-input" type="text" id="lead-name" placeholder="Tu nombre" />
+        <input class="form-input" type="text" id="lead-instagram" placeholder="Tu usuario de Instagram (@tuusuario)" />
+        <input class="form-input" type="tel" id="lead-phone" placeholder="Tu WhatsApp (ej: 2995123456)" />
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;font-size:1rem;" onclick="showResult()">Ver mi diagnóstico →</button>
+    <p style="text-align:center;color:var(--text-muted);font-size:.8rem;margin-top:.75rem;">🔒 Tus datos están seguros. No compartimos tu información.</p>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="result hidden">
+    <div class="result-header" id="result-header"></div>
+    <div class="result-cards" id="result-cards"></div>
+    <div class="cta-section">
+      <button class="btn-wa" onclick="sendWhatsApp()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Hablar con la agencia
+      </button>
+      <button class="btn-pdf" onclick="downloadPDF()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Descargar mi diagnóstico PDF
+      </button>
+      <button class="btn-retry" onclick="resetQuiz()">↺ Hacer el test de nuevo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIGURACIÓN — EDITÁ ESTOS DATOS ──────────────────────────────
+const AGENCIA_WHATSAPP = "5492994626557"; // Reemplazá con tu número real (código de país + número sin espacios)
+const AGENCIA_NOMBRE   = "ELEVA Marketing Digital";     // Nombre de tu agencia
+
+// ── PREGUNTAS ──────────────────────────────────────────────────────
+const preguntas = [
+  {
+    texto: "¿Tu bio de Instagram explica claramente qué hacés y cómo te pueden contactar?",
+    opciones: [
+      { texto: "Sí, es clara y tiene link de contacto", puntos: 3 },
+      { texto: "Tiene algo de info pero le falta", puntos: 1 },
+      { texto: "No, está vacía o muy incompleta", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Cuántos Highlights (historias destacadas) tiene tu perfil?",
+    opciones: [
+      { texto: "5 o más, organizados por tema", puntos: 3 },
+      { texto: "1 a 4, pero no están muy armados", puntos: 1 },
+      { texto: "Ninguno", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Con qué frecuencia publicás en el feed?",
+    opciones: [
+      { texto: "3 veces por semana o más, de forma constante", puntos: 3 },
+      { texto: "1-2 veces por semana o irregular", puntos: 1 },
+      { texto: "Muy esporádico o hace meses que no publicás", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Publicás Reels con regularidad?",
+    opciones: [
+      { texto: "Sí, al menos 2 por semana", puntos: 3 },
+      { texto: "A veces, sin planificación", puntos: 1 },
+      { texto: "No publico Reels", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Cómo es la identidad visual de tu feed?",
+    opciones: [
+      { texto: "Paleta definida, tipografía uniforme y estética coherente", puntos: 3 },
+      { texto: "Hay algo de coherencia pero es inconsistente", puntos: 1 },
+      { texto: "No hay línea visual clara", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Cuál es tu tasa de engagement aproximada? (likes + comentarios / seguidores)",
+    opciones: [
+      { texto: "Alta: más del 5% de mis seguidores interactúa", puntos: 3 },
+      { texto: "Media: entre 1% y 5%", puntos: 2 },
+      { texto: "Baja: menos del 1% o no lo sé", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Cuántas cuentas seguís comparado con tus seguidores?",
+    opciones: [
+      { texto: "Sigo muchos menos de los que me siguen a mí", puntos: 3 },
+      { texto: "Hay un equilibrio más o menos parejo", puntos: 1 },
+      { texto: "Sigo más cuentas de las que me siguen", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Alguna vez recibiste consultas o ventas directamente por Instagram?",
+    opciones: [
+      { texto: "Sí, de forma regular (varias por semana)", puntos: 3 },
+      { texto: "Sí, pero muy esporádico", puntos: 1 },
+      { texto: "Nunca o casi nunca", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Tenés definido quién es tu cliente ideal y le hablás directamente en tu contenido?",
+    opciones: [
+      { texto: "Sí, todo mi contenido está orientado a ese perfil", puntos: 3 },
+      { texto: "Más o menos, pero no del todo definido", puntos: 1 },
+      { texto: "No, publico de forma general sin target claro", puntos: 0 },
+    ]
+  },
+  {
+    texto: "¿Has invertido en publicidad paga (Meta Ads / Instagram Ads) alguna vez?",
+    opciones: [
+      { texto: "Sí, con campaña estructurada y objetivos claros", puntos: 3 },
+      { texto: "Sí, boosteé algún post pero sin estrategia", puntos: 1 },
+      { texto: "No, nunca he invertido en pauta", puntos: 0 },
+    ]
+  },
+];
+
+// ── NIVELES DE RESULTADO ───────────────────────────────────────────
+const niveles = [
+  {
+    id: 1,
+    clase: "nivel-1",
+    badge: "🔴 Base débil",
+    titulo: "Tu perfil necesita una <span>base sólida</span>",
+    subtitulo: "Antes de pensar en crecer o en anuncios, hay que construir los cimientos. Con los cambios correctos podés transformar tu perfil en 30 días.",
+    scoreLabel: "Potencial de mejora",
+    cards: [
+      { icon: "⚡", titulo: "El problema principal", texto: "Tu perfil no está comunicando bien qué hacés ni por qué elegirte. Los visitantes llegan y se van sin actuar." },
+      { icon: "🎯", titulo: "Lo que necesitás ahora", texto: "Optimización completa: bio, identidad visual, Highlights, frecuencia de publicación y estrategia de contenido básica." },
+      { icon: "📈", titulo: "Qué podés lograr", texto: "Con la base bien armada, el perfil empieza a generar consultas orgánicas sin necesidad de pagar publicidad todavía." },
+    ],
+    waMsg: (nombre, ig) => `Hola! Acabo de hacer el test de diagnóstico de Instagram y me salió "Base débil". Me gustaría saber cómo podemos mejorar mi perfil ${ig ? '(@'+ig.replace('@','')+'). ' : '. '}Soy ${nombre || 'un interesado'} y quiero conocer la Fase 1 de trabajo.`,
+    pdfFase: "FASE 1: Optimización y base profesional del perfil",
+  },
+  {
+    id: 2,
+    clase: "nivel-2",
+    badge: "🟡 En desarrollo",
+    titulo: "Vas bien, pero hay <span>puntos clave</span> para desbloquear",
+    subtitulo: "Tu perfil tiene una base razonable pero está dejando oportunidades sobre la mesa. Con ajustes específicos podés empezar a generar leads de forma consistente.",
+    scoreLabel: "Nivel de madurez",
+    cards: [
+      { icon: "🔍", titulo: "Lo que está funcionando", texto: "Tenés presencia, contenido y cierta consistencia. Eso ya es más que la mayoría." },
+      { icon: "🚀", titulo: "El próximo nivel", texto: "Necesitás afinar la estrategia: optimizar el engagement, mejorar los CTAs y empezar a pensar en conversión real." },
+      { icon: "💡", titulo: "Cuándo pensar en anuncios", texto: "Cuando el perfil orgánico esté generando consultas de forma regular, los anuncios van a multiplicar ese resultado." },
+    ],
+    waMsg: (nombre, ig) => `Hola! Hice el test de diagnóstico y me salió "En desarrollo". Mi perfil ${ig ? '@'+ig.replace('@','')+' ' : ''}necesita ajustes para generar más leads. Soy ${nombre || 'un interesado'} y me gustaría saber cómo avanzar con la estrategia.`,
+    pdfFase: "FASE 2: Optimización avanzada y generación de leads orgánicos",
+  },
+  {
+    id: 3,
+    clase: "nivel-3",
+    badge: "🟢 Listo para escalar",
+    titulo: "Tu perfil está <span>listo</span> para los anuncios",
+    subtitulo: "Tenés una base sólida, buen engagement y contenido de calidad. Es el momento perfecto para invertir en publicidad y multiplicar tus resultados.",
+    scoreLabel: "Preparación para anuncios",
+    cards: [
+      { icon: "✅", titulo: "¡Felicitaciones!", texto: "Tu perfil está bien construido. Tenés lo necesario para que los anuncios funcionen y tengan retorno real." },
+      { icon: "📣", titulo: "El siguiente paso", texto: "Con una estrategia de Meta Ads bien estructurada podés escalar las consultas y ventas de forma predecible." },
+      { icon: "🎯", titulo: "Qué esperar", texto: "Campañas orientadas a conversión, segmentación por audiencia local y retargeting a quienes ya interactuaron con tu perfil." },
+    ],
+    waMsg: (nombre, ig) => `Hola! Hice el test de diagnóstico y me salió "Listo para escalar". Mi perfil ${ig ? '@'+ig.replace('@','')+' ' : ''}está listo para anuncios. Soy ${nombre || 'un interesado'} y quiero saber más sobre las campañas de Meta Ads.`,
+    pdfFase: "FASE 3: Estrategia de publicidad paga y escalado",
+  }
+];
+
+// ── ESTADO ─────────────────────────────────────────────────────────
+let current = 0;
+let answers = new Array(preguntas.length).fill(null);
+let resultData = null;
+
+function show(id) {
+  ['screen-intro','screen-quiz','screen-lead','screen-result'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startQuiz() {
+  current = 0;
+  answers = new Array(preguntas.length).fill(null);
+  show('screen-quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = preguntas[current];
+  const pct = Math.round((current / preguntas.length) * 100);
+
+  document.getElementById('q-current').textContent = current + 1;
+  document.getElementById('q-percent').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('q-num').textContent = 'Pregunta ' + String(current + 1).padStart(2, '0');
+  document.getElementById('q-text').textContent = q.texto;
+  document.getElementById('btn-back').style.display = current === 0 ? 'none' : '';
+
+  const btnNext = document.getElementById('btn-next');
+  const isLast = current === preguntas.length - 1;
+  btnNext.textContent = isLast ? 'Ver mi resultado →' : 'Siguiente →';
+
+  const cont = document.getElementById('q-options');
+  cont.innerHTML = '';
+  q.opciones.forEach((op, i) => {
+    const div = document.createElement('div');
+    div.className = 'option' + (answers[current] === i ? ' selected' : '');
+    div.innerHTML = `<div class="o-bullet"></div><span>${op.texto}</span>`;
+    div.onclick = () => selectOpt(i);
+    cont.appendChild(div);
+  });
+
+  btnNext.disabled = answers[current] === null;
+
+  // animate
+  const card = document.getElementById('q-card');
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeUp .35s ease both';
+}
+
+function selectOpt(i) {
+  answers[current] = i;
+  document.querySelectorAll('.option').forEach((el, idx) => {
+    el.classList.toggle('selected', idx === i);
+  });
+  document.getElementById('btn-next').disabled = false;
+}
+
+function nextQ() {
+  if (answers[current] === null) return;
+  if (current < preguntas.length - 1) {
+    current++;
+    renderQ();
+  } else {
+    show('screen-lead');
+  }
+}
+
+function prevQ() {
+  if (current > 0) { current--; renderQ(); }
+}
+
+function calcScore() {
+  let total = 0;
+  answers.forEach((ans, qi) => {
+    if (ans !== null) total += preguntas[qi].opciones[ans].puntos;
+  });
+  return total;
+}
+
+function showResult() {
+  const nombre = document.getElementById('lead-name').value.trim();
+  const ig = document.getElementById('lead-instagram').value.trim();
+  const tel = document.getElementById('lead-phone').value.trim();
+
+  const score = calcScore();
+  const maxScore = preguntas.reduce((acc, q) => acc + Math.max(...q.opciones.map(o => o.puntos)), 0);
+  const pct = Math.round((score / maxScore) * 100);
+
+  let nivel;
+  if (pct < 35) nivel = niveles[0];
+  else if (pct < 70) nivel = niveles[1];
+  else nivel = niveles[2];
+
+  resultData = { nombre, ig, tel, pct, nivel, score, maxScore };
+
+  // Build result HTML
+  const header = document.getElementById('result-header');
+  header.innerHTML = `
+    <div class="result-badge">${nivel.badge}</div>
+    <h2 class="result-title">${nivel.titulo}</h2>
+    <p class="result-sub">${nivel.subtitulo}</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="8"/>
+          <circle class="ring-fill" cx="60" cy="60" r="50" fill="none" stroke-width="8"
+            stroke-linecap="round"
+            stroke-dasharray="${2 * Math.PI * 50}"
+            stroke-dashoffset="${2 * Math.PI * 50 * (1 - pct/100)}"
+            style="transition: stroke-dashoffset 1s ease .3s"/>
+        </svg>
+        <div class="score-num">${pct}<span style="font-size:.9rem">%</span><span class="score-lbl">${nivel.scoreLabel}</span></div>
+      </div>
+    </div>
+  `;
+
+  const cards = document.getElementById('result-cards');
+  cards.innerHTML = nivel.cards.map(c => `
+    <div class="r-card">
+      <div class="r-icon">${c.icon}</div>
+      <div><div class="r-card-title">${c.titulo}</div><div class="r-card-text">${c.texto}</div></div>
+    </div>
+  `).join('');
+
+  // apply color class
+  const resultEl = document.getElementById('screen-result');
+  resultEl.className = 'result ' + nivel.clase;
+
+  show('screen-result');
+
+  // Auto-notify via WhatsApp link generation (opens in new tab for agency notification)
+  if (tel) {
+    // The lead data is captured — in a real deployment you'd send this to a backend
+    // For now, we store it in the PDF and the WA message
+  }
+}
+
+function sendWhatsApp() {
+  if (!resultData) return;
+  const { nombre, ig, tel, pct, nivel } = resultData;
+  const msg = nivel.waMsg(nombre, ig);
+  const url = `https://wa.me/${AGENCIA_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function downloadPDF() {
+  if (!resultData || typeof jspdf === 'undefined') {
+    alert('Cargando PDF... intentá de nuevo en un segundo.');
+    return;
+  }
+  const { jsPDF } = jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const { nombre, ig, tel, pct, nivel } = resultData;
+
+  const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'long', year:'numeric' });
+  const W = 210, m = 20;
+
+  // Header
+  doc.setFillColor(11, 26, 61);
+  doc.rect(0, 0, W, 45, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(18, 168, 132);
+  doc.text('DIAGNÓSTICO DE INSTAGRAM', m, 22);
+  doc.setFontSize(11);
+  doc.setTextColor(180, 180, 200);
+  doc.text(`${AGENCIA_NOMBRE} · ${fecha}`, m, 32);
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 140);
+  doc.text('Resultado confidencial — generado automáticamente', m, 40);
+
+  // Lead info
+  doc.setFillColor(16, 34, 84);
+  doc.roundedRect(m, 52, W - 2*m, 30, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(150, 150, 170);
+  doc.text('DATOS DEL PERFIL EVALUADO', m+6, 62);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(220, 220, 240);
+  const infoLine = [nombre && `Nombre: ${nombre}`, ig && `Instagram: ${ig}`, tel && `WhatsApp: ${tel}`].filter(Boolean).join('   ·   ');
+  doc.text(infoLine || 'Sin datos de contacto', m+6, 72, { maxWidth: W - 2*m - 12 });
+
+  // Score
+  const nivelColors = { 1: [240,96,96], 2: [240,180,60], 3: [18,168,132] };
+  const nc = nivelColors[nivel.id];
+  doc.setFillColor(...nc, 20);
+  doc.roundedRect(m, 90, W - 2*m, 40, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(28);
+  doc.setTextColor(...nc);
+  doc.text(`${pct}%`, m+8, 113);
+  doc.setFontSize(13);
+  doc.text(nivel.badge.replace(/🔴|🟡|🟢/g,'').trim(), m+32, 103);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(180, 180, 200);
+  doc.text(nivel.pdfFase, m+32, 113, { maxWidth: W - m - 32 - 15 });
+
+  // Cards
+  let y = 140;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(18, 168, 132);
+  doc.text('ANÁLISIS DETALLADO', m, y);
+  y += 8;
+
+  nivel.cards.forEach((card, i) => {
+    doc.setFillColor(16, 34, 84);
+    doc.roundedRect(m, y, W - 2*m, 28, 3, 3, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(220, 220, 240);
+    doc.text(card.titulo, m+6, y+10);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 170);
+    doc.text(card.texto, m+6, y+18, { maxWidth: W - 2*m - 12 });
+    y += 33;
+  });
+
+  // CTA
+  y += 5;
+  doc.setFillColor(...nc);
+  doc.roundedRect(m, y, W - 2*m, 22, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(10, 10, 15);
+  doc.text(`¿Querés trabajar en esto? Escribinos por WhatsApp: +${AGENCIA_WHATSAPP}`, m+6, y+13, { maxWidth: W - 2*m - 12 });
+
+  // Footer
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(80, 80, 100);
+  doc.text(`Diagnóstico generado por ${AGENCIA_NOMBRE} · ${fecha} · Documento confidencial`, m, 285);
+
+  const fileName = `Diagnostico_Instagram${ig ? '_'+ig.replace('@','') : ''}.pdf`;
+  doc.save(fileName);
+}
+
+function resetQuiz() {
+  current = 0;
+  answers = new Array(preguntas.length).fill(null);
+  resultData = null;
+  show('screen-intro');
+}
+</script>
+</body>
+</html>
